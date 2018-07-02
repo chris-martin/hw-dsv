@@ -35,6 +35,16 @@ dependencies:
 
 library:
   source-dirs: src
+  when:
+  - condition:  (flag(avx2)) && (impl(ghc >=8.4.1))
+    build-tools:
+    - c2hs
+    c-sources:
+    - cbits/simd.c
+    include-dirs:
+    - cbits
+    source-dirs: src
+    cc-options: -mavx2 -O3
 
 executables:
   hw-dsv:
@@ -103,6 +113,13 @@ when:
   ghc-options:
   - -mbmi2
   - -msse4.2
+- condition: (flag(avx2)) && (impl(ghc >=8.4.1))
+  ghc-options:
+  - -mbmi2
+  - -msse4.2
+  - -mavx2
+  cpp-options:
+  - -DBMI2_ENABLED
 - condition: (impl(ghc >=8.0.1))
   ghc-options:
   - -Wcompat
@@ -122,5 +139,10 @@ flags:
 
   bmi2:
     description: Enable bmi2 instruction set
+    manual: false
+    default: false
+
+  avx2:
+    description: Enable avx2 instruction set
     manual: false
     default: false
