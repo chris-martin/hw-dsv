@@ -44,7 +44,7 @@ library:
     include-dirs:
     - cbits
     source-dirs: src
-    cc-options: -mavx2 -O3
+    cc-options: -mavx2 -mbmi2 -O3
 
 executables:
   hw-dsv:
