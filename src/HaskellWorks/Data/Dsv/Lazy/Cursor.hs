@@ -1,6 +1,7 @@
 module HaskellWorks.Data.Dsv.Lazy.Cursor
   ( DsvCursor (..)
   , makeCursor
+  , makeCursor2
   , snippet
   , trim
   , atEnd
@@ -13,9 +14,10 @@ module HaskellWorks.Data.Dsv.Lazy.Cursor
   ) where
 
 import Data.Function
-import GHC.Word (Word8)
-import HaskellWorks.Data.Dsv.Internal.Broadword (fillWord64)
+import Data.Word
+import GHC.Word                                   (Word8)
 import HaskellWorks.Data.Dsv.Internal.Bits
+import HaskellWorks.Data.Dsv.Internal.Broadword   (fillWord64)
 import HaskellWorks.Data.Dsv.Lazy.Cursor.Internal
 import HaskellWorks.Data.Dsv.Lazy.Cursor.Type
 import HaskellWorks.Data.RankSelect.Base.Rank1
@@ -25,10 +27,12 @@ import Prelude
 
 import qualified Data.ByteString.Lazy                       as LBS
 import qualified Data.Vector                                as DV
+import qualified Data.Vector.Storable                       as DVS
+import qualified HaskellWorks.Data.Dsv.Internal.Build       as B
 import qualified HaskellWorks.Data.Dsv.Internal.Char.Word64 as CW
 
-makeCursor :: Word8 -> LBS.ByteString -> DsvCursor
-makeCursor delimiter lbs = DsvCursor
+makeCursor2 :: Word8 -> LBS.ByteString -> DsvCursor
+makeCursor2 delimiter lbs = DsvCursor
   { dsvCursorText      = lbs
   , dsvCursorMarkers   = ib
   , dsvCursorNewlines  = nls
@@ -44,6 +48,20 @@ makeCursor delimiter lbs = DsvCursor
         ib  = zip2And ibr qm
         nls = zip2And ibn qm
 {-# INLINE makeCursor #-}
+
+makeCursor :: Word8 -> LBS.ByteString -> DsvCursor
+makeCursor delimiter lbs = DsvCursor
+  { dsvCursorText      = lbs
+  , dsvCursorMarkers   = mss
+  , dsvCursorNewlines  = nss
+  , dsvCursorPosition  = 0
+  }
+  where ws  = asVector64s 64 lbs
+        buildIbs :: [DVS.Vector Word64] -> Word64 -> [(DVS.Vector Word64, DVS.Vector Word64)]
+        buildIbs (v:vs) qc = let (ms, ns, nqc) = B.buildIbs delimiter qc v in (ms, ns):buildIbs vs nqc
+        buildIbs [] _      = []
+        (mss, nss) = unzip (buildIbs ws 0)
+{-# INLINE makeCursor2 #-}
 
 snippet :: DsvCursor -> LBS.ByteString
 snippet c = LBS.take (len `max` 0) $ LBS.drop posC $ dsvCursorText c

@@ -1,6 +1,7 @@
 module App.Commands where
 
 import App.Commands.Cat
+import App.Commands.CreateIndex
 import App.Commands.Generate
 import App.Commands.QueryLazy
 import App.Commands.QueryStrict
@@ -13,7 +14,7 @@ commands = commandsGeneral <|> commandsDebugging
 commandsGeneral :: Parser (IO ())
 commandsGeneral = subparser $ mempty
   <>  commandGroup "Commands:"
-  -- <>  cmdCreateIndex
+  <>  cmdCreateIndex
   <>  cmdQueryLazy
   <>  cmdQueryStrict
 
