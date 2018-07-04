@@ -11,7 +11,7 @@
 typedef uint8_t v32si __attribute__ ((vector_size (32)));
 
 uint64_t build_ibs(
-    char delimiter,
+    uint8_t delimiter,
     uint64_t quote_count,
     char *in,
     size_t len,
