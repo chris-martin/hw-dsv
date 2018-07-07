@@ -35,6 +35,13 @@ void avx512_memcpy(
   memcpy(target + aligned_len, source + aligned_len, remaining_len);
 }
 
+void avx512_cmpeq8(
+    uint8_t *target,
+    uint8_t b,
+    uint8_t *source,
+    size_t len) {
+
+}
 #endif
 
 int example_main() {

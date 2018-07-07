@@ -101,6 +101,8 @@ benchmarks:
 
 ghc-options:
 - -O2 -Wall
+cc-options:
+- -O3
 
 when:
 - condition: flag(sse42)
