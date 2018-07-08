@@ -35,13 +35,31 @@ void avx512_memcpy(
   memcpy(target + aligned_len, source + aligned_len, remaining_len);
 }
 
-void avx512_cmpeq8(
-    uint8_t *target,
-    uint8_t b,
+size_t avx512_cmpeq8(
+    uint8_t byte,
+    uint64_t *target,
+    size_t target_length,
     uint8_t *source,
-    size_t len) {
+    size_t source_length) {
+  if (source_length % 64 != 0) {
+    fprintf(stderr, "In avx512_cmpeq8: source_length not divisible by 64");
+    exit(1);
+  }
 
+  // v32si v_byte_x_32 = _mm256_set1_epi8(byte);
+
+  // uint32_t *out_mask = (uint32_t*)target;
+
+  // for (size_t i = 0; i < source_a_length / 32; ++i) {
+  //   v32si v_data = _mm256_maskz_loadu_epi8(0xffffffff, source_a + (i * 32));
+  //   v32si v_results = _mm256_cmpeq_epi8(v_data, v_byte_x_32);
+  //   uint32_t v_results_packed = (uint32_t)_mm256_movemask_epi8(v_results);
+  //   out_mask = x
+  // }
+
+  return 0;
 }
+
 #endif
 
 int example_main() {
