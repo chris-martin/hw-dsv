@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cc18962fc1fdb53cd3e581690f233f59b30198758a43b328e574c4834e810a9d
+-- hash: 160fc15a7b24ec17f86c26fb078b5bf73611eebbe19bf737b31a55c4c17e81f1
 
 name:           hw-dsv
 version:        0.2.1
@@ -55,6 +55,9 @@ library
       HaskellWorks.Data.Dsv.Internal.Simd.Avx2.ByteString
       HaskellWorks.Data.Dsv.Internal.Simd.Capabilities
       HaskellWorks.Data.Dsv.Internal.Simd.Foreign
+      HaskellWorks.Data.Dsv.Internal.Simd.Lazy.Cursor
+      HaskellWorks.Data.Dsv.Internal.Simd.Lazy.Cursor.Internal
+      HaskellWorks.Data.Dsv.Internal.Simd.Lazy.Cursor.Type
       HaskellWorks.Data.Dsv.Lazy.Cursor
       HaskellWorks.Data.Dsv.Lazy.Cursor.Internal
       HaskellWorks.Data.Dsv.Lazy.Cursor.Type
