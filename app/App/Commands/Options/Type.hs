@@ -30,7 +30,7 @@ data CatOptions = CatOptions
 data IndexWord8sOptions = IndexWord8sOptions
   { _indexWord8sOptionsSource :: FilePath
   , _indexWord8sOptionsTarget :: FilePath
-  , _indexWord8sOptionsSimd   :: Bool
+  , _indexWord8sOptionsMethod :: String
   } deriving (Eq, Show)
 
 data QueryLazyOptions = QueryLazyOptions
