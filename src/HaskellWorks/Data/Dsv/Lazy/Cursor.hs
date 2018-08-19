@@ -19,25 +19,27 @@ import HaskellWorks.Data.Dsv.Lazy.Cursor.Internal
 import HaskellWorks.Data.Dsv.Lazy.Cursor.Type
 import HaskellWorks.Data.RankSelect.Base.Rank1
 import HaskellWorks.Data.RankSelect.Base.Select1
-import HaskellWorks.Data.Vector.AsVector64s
+import HaskellWorks.Data.Vector.AsVector64
 import Prelude
 
-import qualified Data.ByteString.Lazy                as LBS
-import qualified Data.Vector                         as DV
-import qualified HaskellWorks.Data.Dsv.Internal.Char as C
-import qualified HaskellWorks.Data.Simd.Comparison   as DVS
+import qualified Data.ByteString.Lazy                   as LBS
+import qualified Data.Vector                            as DV
+import qualified HaskellWorks.Data.ByteString           as BS
+import qualified HaskellWorks.Data.ByteString.Lazy      as LBS
+import qualified HaskellWorks.Data.Dsv.Internal.Char    as C
+import qualified HaskellWorks.Data.Simd.ChunkString     as CS
+import qualified HaskellWorks.Data.Simd.Comparison.Avx2 as SIMD
 
-makeCursor :: Word8 -> LBS.ByteString -> DsvCursor
-makeCursor delimiter lbs = DsvCursor
-  { dsvCursorText      = lbs
+makeCursor :: Word8 -> CS.ChunkString -> DsvCursor
+makeCursor delimiter cs = DsvCursor
+  { dsvCursorText      = LBS.toLazyByteString cs
   , dsvCursorMarkers   = ib
   , dsvCursorNewlines  = nls
   , dsvCursorPosition  = 0
   }
-  where ws  = asVector64s 64 lbs
-        ibq = DVS.cmpEqWord8s C.doubleQuote <$> ws
-        ibn = DVS.cmpEqWord8s C.newline     <$> ws
-        ibd = DVS.cmpEqWord8s delimiter     <$> ws
+  where ibq = asVector64 <$> BS.rechunk 512 (BS.toByteStrings (SIMD.cmpEqWord8s C.doubleQuote cs))
+        ibn = asVector64 <$> BS.rechunk 512 (BS.toByteStrings (SIMD.cmpEqWord8s C.newline     cs))
+        ibd = asVector64 <$> BS.rechunk 512 (BS.toByteStrings (SIMD.cmpEqWord8s delimiter     cs))
         pcq = makeCummulativePopCount ibq
         ibr = zip2Or ibn ibd
         qm  = makeQuoteMask ibq pcq

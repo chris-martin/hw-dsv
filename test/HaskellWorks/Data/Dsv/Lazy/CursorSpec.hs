@@ -1,18 +1,18 @@
-{-# LANGUAGE BangPatterns        #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module HaskellWorks.Data.Dsv.Lazy.CursorSpec (spec) where
 
-import Data.Semigroup                            ((<>))
+import Data.Semigroup                      ((<>))
+import HaskellWorks.Data.Dsv.Internal.Char (comma)
 import HaskellWorks.Hspec.Hedgehog
 import Hedgehog
 import Test.Hspec
 
-import qualified Data.ByteString.Lazy                                   as LBS
-import qualified Data.Vector                                            as V
-import qualified HaskellWorks.Data.Dsv.Lazy.Cursor                      as SVL
-import           HaskellWorks.Data.Dsv.Internal.Char (comma)
+import qualified Data.ByteString.Lazy               as LBS
+import qualified Data.Vector                        as V
+import qualified HaskellWorks.Data.Dsv.Lazy.Cursor  as SVL
+import qualified HaskellWorks.Data.Simd.ChunkString as CS
 
 {-# ANN module ("HLint: ignore Redundant do"        :: String) #-}
 {-# ANN module ("HLint: ignore Reduce duplication"  :: String) #-}
@@ -32,7 +32,7 @@ subjectMM = "hello,goodbye\nyes,no"
 expectedMM = mkExpected [["hello","goodbye"],["yes","no"]]
 
 testToListVector :: LBS.ByteString -> [V.Vector LBS.ByteString]
-testToListVector = SVL.toListVector . SVL.makeCursor comma
+testToListVector = SVL.toListVector . SVL.makeCursor comma . CS.toChunkString
 
 -- Adds a terminal newline to the file
 testToListVector' :: LBS.ByteString -> [V.Vector LBS.ByteString]

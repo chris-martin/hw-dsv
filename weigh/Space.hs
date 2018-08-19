@@ -1,7 +1,10 @@
+{-# LANGUAGE BangPatterns #-}
+
 module Main where
 
-import Data.ByteString (ByteString)
-import Data.Vector     (Vector)
+import Data.ByteString                     (ByteString)
+import Data.Vector                         (Vector)
+import HaskellWorks.Data.Dsv.Internal.Char (comma)
 import Weigh
 
 import qualified Data.ByteString.Lazy                as LBS
@@ -9,9 +12,10 @@ import qualified Data.Csv                            as CSV
 import qualified Data.Csv.Streaming                  as CSS
 import qualified Data.Foldable                       as F
 import qualified Data.Vector                         as DV
-import           HaskellWorks.Data.Dsv.Internal.Char (comma)
-import qualified HaskellWorks.Data.Dsv.Strict.Cursor as SVS
 import qualified HaskellWorks.Data.Dsv.Lazy.Cursor   as SVL
+import qualified HaskellWorks.Data.Dsv.Strict.Cursor as SVS
+import qualified HaskellWorks.Data.Simd.ChunkString  as CS
+import qualified System.IO                           as IO
 
 {-# ANN module ("HLint: ignore Redundant do"        :: String) #-}
 
@@ -28,8 +32,9 @@ loadCsvStrict filePath = do
 
 loadCsvLazy :: FilePath -> IO [DV.Vector LBS.ByteString]
 loadCsvLazy filePath = do
-  bs <- LBS.readFile filePath
-  let c = SVL.makeCursor comma bs
+  !cs <- IO.openBinaryFile filePath IO.ReadMode >>= CS.hGetContents
+
+  let c = SVL.makeCursor comma cs
 
   return $ SVL.toListVector c
 

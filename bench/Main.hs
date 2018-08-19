@@ -23,6 +23,8 @@ import qualified HaskellWorks.Data.Dsv.Strict.Cursor.Internal           as SVS
 import qualified HaskellWorks.Data.Dsv.Strict.Cursor.Internal.Reference as SVS
 import qualified HaskellWorks.Data.FromForeignRegion                    as IO
 import qualified HaskellWorks.Data.RankSelect.CsPoppy                   as RS
+import qualified HaskellWorks.Data.Simd.ChunkString                     as CS
+import qualified System.IO                                              as IO
 
 loadCassavaStrict :: FilePath -> IO (Vector (Vector ByteString))
 loadCassavaStrict filePath = do
@@ -47,16 +49,16 @@ loadHwsvStrict filePath = SVS.toVectorVector <$> SVS.mmapCursor comma True fileP
 
 loadHwsvLazyIndex :: FilePath -> IO [(DVS.Vector Word64, DVS.Vector Word64)]
 loadHwsvLazyIndex filePath = do
-  !bs <- LBS.readFile filePath
+  !cs <- IO.openBinaryFile filePath IO.ReadMode >>= CS.hGetContents
 
-  let c = SVL.makeCursor comma bs
+  let c = SVL.makeCursor comma cs
   pure (zip (SVL.dsvCursorMarkers c) (SVL.dsvCursorNewlines c))
 
 loadHwsvLazy :: FilePath -> IO [Vector LBS.ByteString]
 loadHwsvLazy filePath = do
-  !bs <- LBS.readFile filePath
+  !cs <- IO.openBinaryFile filePath IO.ReadMode >>= CS.hGetContents
 
-  let c = SVL.makeCursor comma bs
+  let c = SVL.makeCursor comma cs
 
   pure (SVL.toListVector c)
 
