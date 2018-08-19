@@ -14,21 +14,25 @@ module HaskellWorks.Data.Dsv.Lazy.Cursor
 
 import Data.Function
 import GHC.Word                                   (Word8)
+import HaskellWorks.Data.Drop
 import HaskellWorks.Data.Dsv.Internal.Bits
 import HaskellWorks.Data.Dsv.Lazy.Cursor.Internal
 import HaskellWorks.Data.Dsv.Lazy.Cursor.Type
+import HaskellWorks.Data.Positioning
 import HaskellWorks.Data.RankSelect.Base.Rank1
 import HaskellWorks.Data.RankSelect.Base.Select1
 import HaskellWorks.Data.Vector.AsVector64
-import Prelude
+import Prelude                                    hiding (drop)
 
 import qualified Data.ByteString.Lazy                   as LBS
 import qualified Data.Vector                            as DV
+import qualified Data.Vector.Storable                   as DVS
 import qualified HaskellWorks.Data.ByteString           as BS
 import qualified HaskellWorks.Data.ByteString.Lazy      as LBS
 import qualified HaskellWorks.Data.Dsv.Internal.Char    as C
 import qualified HaskellWorks.Data.Simd.ChunkString     as CS
 import qualified HaskellWorks.Data.Simd.Comparison.Avx2 as SIMD
+import qualified Prelude                                as P
 
 makeCursor :: Word8 -> CS.ChunkString -> DsvCursor
 makeCursor delimiter cs = DsvCursor
@@ -37,9 +41,9 @@ makeCursor delimiter cs = DsvCursor
   , dsvCursorNewlines  = nls
   , dsvCursorPosition  = 0
   }
-  where ibq = asVector64 <$> BS.rechunk 64 (BS.toByteStrings (SIMD.cmpEqWord8s C.doubleQuote cs))
-        ibn = asVector64 <$> BS.rechunk 64 (BS.toByteStrings (SIMD.cmpEqWord8s C.newline     cs))
-        ibd = asVector64 <$> BS.rechunk 64 (BS.toByteStrings (SIMD.cmpEqWord8s delimiter     cs))
+  where ibq = asVector64 <$> BS.rechunk 4096 (BS.toByteStrings (SIMD.cmpEqWord8s C.doubleQuote cs))
+        ibn = asVector64 <$> BS.rechunk 4096 (BS.toByteStrings (SIMD.cmpEqWord8s C.newline     cs))
+        ibd = asVector64 <$> BS.rechunk 4096 (BS.toByteStrings (SIMD.cmpEqWord8s delimiter     cs))
         pcq = makeCummulativePopCount ibq
         ibr = zip2Or ibn ibd
         qm  = makeQuoteMask ibq pcq
@@ -55,12 +59,18 @@ snippet c = LBS.take (len `max` 0) $ LBS.drop posC $ dsvCursorText c
         len  = posD - posC
 {-# INLINE snippet #-}
 
+lvDrop :: DVS.Storable a => Int -> [DVS.Vector a] -> [DVS.Vector a]
+lvDrop n (v:vs) = if n < DVS.length v
+  then DVS.drop n v:vs
+  else lvDrop (n - DVS.length v) vs
+lvDrop _ [] = []
+
 trim :: DsvCursor -> DsvCursor
 trim c = if dsvCursorPosition c >= 512
   then trim c
     { dsvCursorText     = LBS.drop 512 (dsvCursorText c)
-    , dsvCursorMarkers  = drop 1 (dsvCursorMarkers c)
-    , dsvCursorNewlines = drop 1 (dsvCursorNewlines c)
+    , dsvCursorMarkers  = lvDrop 8 (dsvCursorMarkers c)
+    , dsvCursorNewlines = lvDrop 8 (dsvCursorNewlines c)
     , dsvCursorPosition = dsvCursorPosition c - 512
     }
   else c
