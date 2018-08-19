@@ -46,9 +46,9 @@ makeCursor delimiter cs = DsvCursor
   , dsvCursorNewlines  = nls
   , dsvCursorPosition  = 0
   }
-  where ibq = asVector64 <$> BS.rechunk 512 (BS.toByteStrings (SIMD.cmpEqWord8s C.doubleQuote cs))
-        ibn = asVector64 <$> BS.rechunk 512 (BS.toByteStrings (SIMD.cmpEqWord8s C.newline     cs))
-        ibd = asVector64 <$> BS.rechunk 512 (BS.toByteStrings (SIMD.cmpEqWord8s delimiter     cs))
+  where ibq = asVector64 <$> BS.rechunk 64 (BS.toByteStrings (SIMD.cmpEqWord8s C.doubleQuote cs))
+        ibn = asVector64 <$> BS.rechunk 64 (BS.toByteStrings (SIMD.cmpEqWord8s C.newline     cs))
+        ibd = asVector64 <$> BS.rechunk 64 (BS.toByteStrings (SIMD.cmpEqWord8s delimiter     cs))
         (ib, nls) = makeIndexes ibd ibn ibq
 {-# INLINE makeCursor #-}
 
