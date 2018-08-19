@@ -17,16 +17,17 @@ import Data.List
 import Data.Semigroup               ((<>))
 import Options.Applicative          hiding (columns)
 
-import qualified App.IO                            as IO
-import qualified App.Lens                          as L
-import qualified Data.ByteString.Builder           as B
-import qualified Data.ByteString.Lazy              as LBS
-import qualified Data.Vector                       as DV
-import qualified HaskellWorks.Data.Dsv.Lazy.Cursor as SVL
+import qualified App.IO                             as IO
+import qualified App.Lens                           as L
+import qualified Data.ByteString.Builder            as B
+import qualified Data.ByteString.Lazy               as LBS
+import qualified Data.Vector                        as DV
+import qualified HaskellWorks.Data.Dsv.Lazy.Cursor  as SVL
+import qualified HaskellWorks.Data.Simd.ChunkString as CS
 
 runQueryLazy :: QueryLazyOptions -> IO ()
 runQueryLazy opts = do
-  !bs <- IO.readInputFile (opts ^. L.filePath)
+  !bs <- IO.openInputFile (opts ^. L.filePath) >>= CS.hGetContents
 
   let !c = SVL.makeCursor (opts ^. L.delimiter) bs
   let !rows = SVL.toListVector c
