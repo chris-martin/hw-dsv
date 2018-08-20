@@ -41,3 +41,10 @@ data QueryLazyOptions = QueryLazyOptions
   , _queryLazyOptionsOutDelimiter   :: Word8
   , _queryLazyOptionsMethod         :: String
   } deriving (Eq, Show)
+
+data StatsLazyOptions = StatsLazyOptions
+  { _statsLazyOptionsColumns        :: [Int]
+  , _statsLazyOptionsFilePath       :: FilePath
+  , _statsLazyOptionsOutputFilePath :: FilePath
+  , _statsLazyOptionsDelimiter      :: Word8
+  } deriving (Eq, Show)

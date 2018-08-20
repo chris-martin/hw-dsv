@@ -12,21 +12,23 @@ import Data.Semigroup                    ((<>))
 import HaskellWorks.Data.ByteString.Lazy
 import Options.Applicative               hiding (columns)
 
-import qualified App.IO                            as IO
-import qualified App.Lens                          as L
-import qualified Data.ByteString.Builder           as B
-import qualified Data.ByteString.Lazy              as LBS
-import qualified HaskellWorks.Data.Dsv.Lazy.Cursor as SVL
-import qualified System.IO                         as IO
+import qualified App.IO                                        as IO
+import qualified App.Lens                                      as L
+import qualified Data.ByteString.Builder                       as B
+import qualified Data.ByteString.Lazy                          as LBS
+import qualified HaskellWorks.Data.Dsv.Internal.BitString.Lazy as LBBS
+import qualified HaskellWorks.Data.Dsv.Lazy.Cursor             as SVL
+import qualified HaskellWorks.Data.Simd.ChunkString            as CS
+import qualified System.IO                                     as IO
 
 runCreateIndex :: CreateIndexOptions -> IO ()
 runCreateIndex opts = do
   let !filePath   = opts ^. L.filePath
   let !delimiter  = opts ^. L.delimiter
 
-  !bs <- IO.readInputFile filePath
+  !cs <- IO.openInputFile filePath >>= CS.hGetContents
 
-  let !cursor   = SVL.makeCursor delimiter bs
+  let !cursor   = SVL.makeCursor delimiter cs
   let !markers  = cursor & SVL.dsvCursorMarkers
   let !newlines = cursor & SVL.dsvCursorNewlines
   let !filePathNoDash = if filePath == "-" then "stdin" else filePath
@@ -34,7 +36,7 @@ runCreateIndex opts = do
   hOutMarkers  <- IO.openFile (filePathNoDash ++ ".markers.idx") IO.WriteMode
   hOutNewlines <- IO.openFile (filePathNoDash ++ ".newlines.idx") IO.WriteMode
 
-  forM_ (zip markers newlines) $ \(markerV, newlineV) -> do
+  forM_ (zip (LBBS.bits markers) (LBBS.bits newlines)) $ \(markerV, newlineV) -> do
     LBS.hPut hOutMarkers  (toLazyByteString markerV)
     LBS.hPut hOutNewlines (toLazyByteString newlineV)
 

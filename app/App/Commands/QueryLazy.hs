@@ -17,15 +17,16 @@ import Data.List
 import Data.Semigroup               ((<>))
 import Options.Applicative          hiding (columns)
 
-import qualified App.IO                            as IO
-import qualified App.Lens                          as L
-import qualified Data.ByteString                   as BS
-import qualified Data.ByteString.Builder           as B
-import qualified Data.ByteString.Lazy              as LBS
-import qualified Data.Vector                       as DV
-import qualified HaskellWorks.Data.Dsv.Lazy.Cursor as SVL
-import qualified System.Exit                       as IO
-import qualified System.IO                         as IO
+import qualified App.IO                             as IO
+import qualified App.Lens                           as L
+import qualified Data.ByteString                    as BS
+import qualified Data.ByteString.Builder            as B
+import qualified Data.ByteString.Lazy               as LBS
+import qualified Data.Vector                        as DV
+import qualified HaskellWorks.Data.Dsv.Lazy.Cursor  as SVL
+import qualified HaskellWorks.Data.Simd.ChunkString as CS
+import qualified System.Exit                        as IO
+import qualified System.IO                          as IO
 
 defaultMethod :: String
 defaultMethod = "lazy-traverse"
@@ -41,7 +42,7 @@ runQueryLazy opts = case opts ^. L.method of
 
 runQueryLazySlow :: QueryLazyOptions -> IO ()
 runQueryLazySlow opts = do
-  !bs <- IO.readInputFile (opts ^. L.filePath)
+  !bs <- IO.openInputFile (opts ^. L.filePath) >>= CS.hGetContents
 
   let !c = SVL.makeCursor (opts ^. L.delimiter) bs
   let !rows = SVL.toListVector c
@@ -63,7 +64,7 @@ runQueryLazySlow opts = do
 
 runQueryLazyStrict :: QueryLazyOptions -> IO ()
 runQueryLazyStrict opts = do
-  !bs <- IO.readInputFile (opts ^. L.filePath)
+  !bs <- IO.openInputFile (opts ^. L.filePath) >>= CS.hGetContents
 
   let !c = SVL.makeCursor (opts ^. L.delimiter) bs
   let !rows = SVL.toListVectorStrict c
@@ -85,7 +86,7 @@ runQueryLazyStrict opts = do
 
 runQueryLazyFast :: QueryLazyOptions -> IO ()
 runQueryLazyFast opts = do
-  !bs <- IO.readInputFile (opts ^. L.filePath)
+  !bs <- IO.openInputFile (opts ^. L.filePath) >>= CS.hGetContents
 
   let !c = SVL.makeCursor (opts ^. L.delimiter) bs
   let !sel = opts ^. L.columns

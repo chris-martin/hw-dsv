@@ -17,12 +17,15 @@ import qualified Data.ByteString.Lazy                                   as LBS
 import qualified Data.Csv                                               as CSV
 import qualified Data.Csv.Streaming                                     as CSS
 import qualified Data.Vector.Storable                                   as DVS
+import qualified HaskellWorks.Data.Dsv.Internal.BitString.Lazy          as LBBS
 import qualified HaskellWorks.Data.Dsv.Lazy.Cursor                      as SVL
 import qualified HaskellWorks.Data.Dsv.Strict.Cursor                    as SVS
 import qualified HaskellWorks.Data.Dsv.Strict.Cursor.Internal           as SVS
 import qualified HaskellWorks.Data.Dsv.Strict.Cursor.Internal.Reference as SVS
 import qualified HaskellWorks.Data.FromForeignRegion                    as IO
 import qualified HaskellWorks.Data.RankSelect.CsPoppy                   as RS
+import qualified HaskellWorks.Data.Simd.ChunkString                     as CS
+import qualified System.IO                                              as IO
 
 loadCassavaStrict :: FilePath -> IO (Vector (Vector ByteString))
 loadCassavaStrict filePath = do
@@ -39,24 +42,23 @@ loadCassavaStreaming filePath = do
   pure r
 
 loadHwsvStrictIndex :: FilePath -> IO (SVS.DsvCursor ByteString RS.CsPoppy)
-loadHwsvStrictIndex filePath =
-  SVS.mmapCursor comma True filePath
+loadHwsvStrictIndex = SVS.mmapCursor comma True
 
 loadHwsvStrict :: FilePath -> IO (Vector (Vector ByteString))
 loadHwsvStrict filePath = SVS.toVectorVector <$> SVS.mmapCursor comma True filePath
 
 loadHwsvLazyIndex :: FilePath -> IO [(DVS.Vector Word64, DVS.Vector Word64)]
 loadHwsvLazyIndex filePath = do
-  !bs <- LBS.readFile filePath
+  !cs <- IO.openBinaryFile filePath IO.ReadMode >>= CS.hGetContents
 
-  let c = SVL.makeCursor comma bs
-  pure (zip (SVL.dsvCursorMarkers c) (SVL.dsvCursorNewlines c))
+  let c = SVL.makeCursor comma cs
+  pure (zip (LBBS.bits (SVL.dsvCursorMarkers c)) (LBBS.bits (SVL.dsvCursorNewlines c)))
 
 loadHwsvLazy :: FilePath -> IO [Vector LBS.ByteString]
 loadHwsvLazy filePath = do
-  !bs <- LBS.readFile filePath
+  !cs <- IO.openBinaryFile filePath IO.ReadMode >>= CS.hGetContents
 
-  let c = SVL.makeCursor comma bs
+  let c = SVL.makeCursor comma cs
 
   pure (SVL.toListVector c)
 

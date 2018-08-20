@@ -17,21 +17,25 @@ module HaskellWorks.Data.Dsv.Lazy.Cursor
 
 import Data.Function
 import Data.Word
-import GHC.Word                                  (Word8)
+import GHC.Word                                      (Word8)
+import HaskellWorks.Data.Drop
+import HaskellWorks.Data.Dsv.Internal.BitString.Lazy
 import HaskellWorks.Data.Dsv.Lazy.Cursor.Type
 import HaskellWorks.Data.Positioning
 import HaskellWorks.Data.RankSelect.Base.Rank1
 import HaskellWorks.Data.RankSelect.Base.Select1
-import HaskellWorks.Data.Vector.AsVector64s
-import Prelude
+import Prelude                                       hiding (drop)
 
-import qualified Data.ByteString                       as BS
-import qualified Data.ByteString.Lazy                  as LBS
-import qualified Data.Vector                           as DV
-import qualified Data.Vector.Storable                  as DVS
-import qualified HaskellWorks.Data.Dsv.Internal.Char   as C
-import qualified HaskellWorks.Data.Dsv.Internal.Vector as DVS
-import qualified HaskellWorks.Data.Simd.Comparison     as DVS
+import qualified Data.ByteString                        as BS
+import qualified Data.ByteString.Lazy                   as LBS
+import qualified Data.Vector                            as DV
+import qualified Data.Vector.Storable                   as DVS
+import qualified HaskellWorks.Data.ByteString           as BS
+import qualified HaskellWorks.Data.ByteString.Lazy      as LBS
+import qualified HaskellWorks.Data.Dsv.Internal.Char    as C
+import qualified HaskellWorks.Data.Dsv.Internal.Vector  as DVS
+import qualified HaskellWorks.Data.Simd.ChunkString     as CS
+import qualified HaskellWorks.Data.Simd.Comparison.Avx2 as SIMD
 
 makeIndexes :: [DVS.Vector Word64] -> [DVS.Vector Word64] -> [DVS.Vector Word64] -> ([DVS.Vector Word64], [DVS.Vector Word64])
 makeIndexes ds ns qs = unzip $ go 0 0 ds ns qs
@@ -41,19 +45,17 @@ makeIndexes ds ns qs = unzip $ go 0 0 ds ns qs
         go _ _ [] [] [] = []
         go _ _ _ _ _ = error "Unbalanced inputs"
 
-makeCursor :: Word8 -> LBS.ByteString -> DsvCursor
-makeCursor delimiter lbs = DsvCursor
-  { dsvCursorText      = lbs
-  , dsvCursorMarkers   = ib
-  , dsvCursorNewlines  = nls
+makeCursor :: Word8 -> CS.ChunkString -> DsvCursor
+makeCursor delimiter cs = DsvCursor
+  { dsvCursorText      = LBS.toLazyByteString cs
+  , dsvCursorMarkers   = toBitString ib
+  , dsvCursorNewlines  = toBitString nls
   , dsvCursorPosition  = 0
   }
-  where ws  = asVector64s 64 lbs
-        ibq = DVS.cmpEqWord8s C.doubleQuote <$> ws
-        ibn = DVS.cmpEqWord8s C.newline     <$> ws
-        ibd = DVS.cmpEqWord8s delimiter     <$> ws
+  where ibq = DVS.unsafeToVector64 <$> BS.toByteStrings (SIMD.cmpEqWord8s C.doubleQuote cs)
+        ibn = DVS.unsafeToVector64 <$> BS.toByteStrings (SIMD.cmpEqWord8s C.newline     cs)
+        ibd = DVS.unsafeToVector64 <$> BS.toByteStrings (SIMD.cmpEqWord8s delimiter     cs)
         (ib, nls) = makeIndexes ibd ibn ibq
-{-# INLINE makeCursor #-}
 
 snippet :: DsvCursor -> LBS.ByteString
 snippet c = LBS.take (len `max` 0) $ LBS.drop posC $ dsvCursorText c
@@ -66,12 +68,14 @@ snippet c = LBS.take (len `max` 0) $ LBS.drop posC $ dsvCursorText c
 trim :: DsvCursor -> DsvCursor
 trim c = if dsvCursorPosition c >= 512
   then trim c
-    { dsvCursorText     = LBS.drop 512 (dsvCursorText c)
-    , dsvCursorMarkers  = drop 1 (dsvCursorMarkers c)
-    , dsvCursorNewlines = drop 1 (dsvCursorNewlines c)
-    , dsvCursorPosition = dsvCursorPosition c - 512
+    { dsvCursorText     = LBS.drop skipTextLen (dsvCursorText c)
+    , dsvCursorMarkers  = drop (fromIntegral skipIdxLen) (dsvCursorMarkers c)
+    , dsvCursorNewlines = drop (fromIntegral skipIdxLen) (dsvCursorNewlines c)
+    , dsvCursorPosition = dsvCursorPosition c - fromIntegral skipTextLen
     }
   else c
+  where skipTextLen = fromIntegral $ (dsvCursorPosition c `div` 512) * 512
+        skipIdxLen  = skipTextLen `div` 64
 {-# INLINE trim #-}
 
 atEnd :: DsvCursor -> Bool

@@ -15,6 +15,8 @@ import HaskellWorks.Data.Bits.BitWise
 import HaskellWorks.Data.Bits.PopCount.PopCount1
 import HaskellWorks.Data.Positioning
 
+import qualified Data.ByteString              as BS
+import qualified Data.ByteString.Internal     as BSI
 import qualified Data.Vector.Storable         as DVS
 import qualified Data.Vector.Storable.Mutable as DVSM
 
@@ -72,3 +74,12 @@ indexCsvChunk qqCount qqCarry mks nls qqs = runST $ do
 oddsMask :: Word64
 oddsMask = 0x5555555555555555
 {-# INLINE oddsMask #-}
+
+unsafeToVector64 :: BS.ByteString -> DVS.Vector Word64
+unsafeToVector64 bs = if vLen * 8 == BS.length bs
+  then case BSI.toForeignPtr bs of
+    (fptr, start, offset) -> DVS.unsafeCast (DVS.unsafeFromForeignPtr fptr start offset)
+  else case BSI.toForeignPtr (bs <> BS.replicate (vLen * 8 - BS.length bs) 0) of
+    (fptr, start, offset) -> DVS.unsafeCast (DVS.unsafeFromForeignPtr fptr start offset)
+  where vLen = (BS.length bs + 7) `div` 8
+{-# INLINE unsafeToVector64 #-}

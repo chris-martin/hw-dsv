@@ -16,3 +16,4 @@ makeFields ''CreateIndexOptions
 makeFields ''GenerateOptions
 makeFields ''QueryLazyOptions
 makeFields ''QueryStrictOptions
+makeFields ''StatsLazyOptions
