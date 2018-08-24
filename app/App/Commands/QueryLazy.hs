@@ -20,8 +20,8 @@ import Options.Applicative          hiding (columns)
 import qualified App.IO                            as IO
 import qualified App.Lens                          as L
 import qualified Data.ByteString.Builder           as B
-import qualified Data.ByteString.Lazy              as LBS
 import qualified Data.Vector                       as DV
+import qualified Data.Vector.Storable              as DVS
 import qualified HaskellWorks.Data.Dsv.Lazy.Cursor as SVL
 
 runQueryLazy :: QueryLazyOptions -> IO ()
@@ -29,23 +29,19 @@ runQueryLazy opts = do
   !bs <- IO.readInputFile (opts ^. L.filePath)
 
   let !c = SVL.makeCursor (opts ^. L.delimiter) bs
-  let !rows = SVL.toListVector c
+  let !sel = opts ^. L.columns
+  let !rows = SVL.selectListVector sel c
   let !outDelimiterBuilder = B.word8 (opts ^. L.outDelimiter)
 
   runResourceT $ do
     (_, hOut) <- IO.openOutputFile (opts ^. L.outputFilePath) Nothing
     forM_ rows $ \row -> do
-      let fieldStrings = columnToFieldString row <$> (opts ^. L.columns)
+      let fieldStrings = fmap B.lazyByteString row
 
       liftIO $ B.hPutBuilder hOut $ mconcat (intersperse outDelimiterBuilder fieldStrings) <> B.word8 10
 
       return ()
   return ()
-
-  where columnToFieldString :: DV.Vector LBS.ByteString -> Int -> B.Builder
-        columnToFieldString fields i = if i >= 0 && i < DV.length fields
-          then B.lazyByteString (DV.unsafeIndex fields i)
-          else B.lazyByteString LBS.empty
 
 cmdQueryLazy :: Mod CommandFields (IO ())
 cmdQueryLazy = command "query-lazy" $ flip info idm $ runQueryLazy <$> optsQueryLazy
