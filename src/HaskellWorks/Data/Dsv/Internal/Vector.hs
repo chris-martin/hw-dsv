@@ -4,7 +4,6 @@
 
 module HaskellWorks.Data.Dsv.Internal.Vector
   ( empty64
-  , constructNS
   , ltWord
   , indexCsvChunk
   , oddsMask
@@ -13,7 +12,6 @@ module HaskellWorks.Data.Dsv.Internal.Vector
 import Control.Monad.ST
 import Data.Bits.Pdep
 import Data.Word
-import Foreign.Storable                          (Storable)
 import GHC.Int
 import GHC.Prim
 import GHC.Word                                  hiding (ltWord)
@@ -27,17 +25,6 @@ import qualified Data.Vector.Storable.Mutable as DVSM
 empty64 :: DVS.Vector Word64
 empty64 = DVS.replicate 64 0
 {-# NOINLINE empty64 #-}
-
-constructNS :: forall a s. Storable a => Int -> s -> (s -> DVS.Vector a -> (s, a)) -> (s, DVS.Vector a)
-constructNS n s f = DVS.createT (go 0 s)
-  where go :: forall q. Int -> s -> ST q (s, DVS.MVector q a)
-        go n1 s1 = do
-          mv :: DVS.MVector q a <- DVSM.unsafeNew n
-          u <- DVS.unsafeFreeze mv
-          let (s2, w) = f s1 (DVS.take n1 u)
-          DVSM.unsafeWrite mv n1 w
-          return (s2, mv)
-{-# INLINE constructNS #-}
 
 ltWord :: Word64 -> Word64 -> Word64
 ltWord (W64# a#) (W64# b#) = fromIntegral (I64# (ltWord# a# b#))
