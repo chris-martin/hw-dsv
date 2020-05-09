@@ -14,7 +14,7 @@ import qualified HaskellWorks.Data.Dsv.Lazy.Cursor      as SVL
 import qualified HaskellWorks.Data.Dsv.Lazy.Cursor.Lazy as SVLL
 import qualified HaskellWorks.Data.Dsv.Strict.Cursor    as SVS
 
-{-# ANN module ("HLint: ignore Redundant do"        :: String) #-}
+{- HLINT ignore "Redundant do"        -}
 
 repeatedly :: (a -> Maybe a) -> a -> [a]
 repeatedly f a = a:case f a of

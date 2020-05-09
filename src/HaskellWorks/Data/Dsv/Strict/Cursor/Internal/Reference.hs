@@ -4,7 +4,7 @@
 
 module HaskellWorks.Data.Dsv.Strict.Cursor.Internal.Reference where
 
-import Data.Bits                                  (popCount)
+import Data.Bits                                 (popCount)
 import Data.Word
 import HaskellWorks.Data.AtIndex
 import HaskellWorks.Data.Bits.BitWise
@@ -18,7 +18,7 @@ import Prelude
 import qualified Data.Vector.Storable                       as DVS
 import qualified HaskellWorks.Data.Dsv.Internal.Char.Word64 as CW
 
-{-# ANN module ("HLint: ignore Reduce duplication"  :: String) #-}
+{- HLINT ignore "Reduce duplication"  -}
 
 unsafeIndex :: DVS.Vector Word64 -> Int -> Word64
 unsafeIndex v i | i < 0                           = error $ "Invalid index: " <> show i <> " for vector sized " <> show (DVS.length v)
